@@ -4,23 +4,42 @@
     <title>Mapa Koloběžek</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://d3js.org/d3.v5.min.js" charset="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.js"></script>
+    <script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
+    <script src="https://unpkg.com/@asymmetrik/leaflet-d3@4/dist/leaflet-d3.js" charset="utf-8"></script>  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 
     <style>
-        #map { height: 800px; width: 100%; }
+        body { text-align: center; }
+        #map, #mapHex, #mapHeat { 
+            height: 400px; 
+            width: 80%; 
+            margin: 0 auto 30px;
+        }
+        .map-title { font-size: 24px; margin-top: 30px; }
         .popup-image { width: 100%; height: auto; }
+        .hexbin-hexagon {
+            stroke: #000;
+            stroke-width: 1px;
+        }
     </style>
 </head>
 <body>
+    <div class="map-title">Mapa s Ikonkou Koloběžky</div>
     <div id="map"></div>
+    <div class="map-title">Hexbin Mapa Koloběžek</div>
+    <div id="mapHex"></div>
+    <div class="map-title">Heatmapa Koloběžek</div>
+    <div id="mapHeat"></div>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // První mapa s ikonkou koloběžky
             var map = L.map('map').setView([50.0755, 14.4378], 13);
-
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
@@ -30,8 +49,44 @@
                 iconSize: [38, 38]
             });
 
-            var scooter = L.marker([50.0755, 14.4378], {icon: scooterIcon}).addTo(map);
-            scooter.bindPopup('<b>Jméno koloběžky:</b> Scooter 1<br><b>Stav:</b> Neuklizená<br><b>Nahlásil:</b> Uživatel X<br><img src="kolobezka.jpg" alt="Koloběžka" class="popup-image">');
+            var scooter1 = L.marker([50.0755, 14.4378], {icon: scooterIcon}).addTo(map);
+            scooter1.bindPopup('<b>Jméno koloběžky:</b> Scooter 1<br><b>Stav:</b> Neuklizená<br><b>Nahlásil:</b> Uživatel X<br><img src="kolobezka.jpg" alt="Koloběžka" class="popup-image">');
+
+            // Přidání druhé koloběžky
+            var scooter2 = L.marker([50.0760, 14.4383], {icon: scooterIcon}).addTo(map);
+            scooter2.bindPopup('<b>Jméno koloběžky:</b> Scooter 2<br><b>Stav:</b> Nahlášená<br><b>Nahlásil:</b> Uživatel Y<br><img src="kolobezka.jpg" alt="Koloběžka" class="popup-image">');
+            
+            // Hexbin mapa
+            var mapHex = L.map('mapHex').setView([50.0755, 14.4378], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(mapHex);
+
+            var hexLayer = L.hexbinLayer({radius: 12, opacity: 0.5}).addTo(mapHex);
+            hexLayer.colorScale().range(['white', 'blue']);
+
+            var latFn = d3.randomNormal(50.0755, 0.01);
+            var longFn = d3.randomNormal(14.4378, 0.01);
+
+            var generateData = function() {
+                var data = [];
+                for (var i = 0; i < 1000; i++) {
+                    data.push([longFn(), latFn()]);
+                }
+                hexLayer.data(data);
+                return data;
+            };
+
+            var hexbinData = generateData();
+
+            // Heatmapa
+            var mapHeat = L.map('mapHeat').setView([50.0755, 14.4378], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(mapHeat);
+
+            var heatData = hexbinData.map(function(d) { return [d[1], d[0], 0.5]; });
+            L.heatLayer(heatData, {radius: 25}).addTo(mapHeat);
         });
     </script>
 </body>
